@@ -24,19 +24,21 @@ class UserService
     }
 
     public function downgradeExpiredUsers()
-    {
-        $now = Carbon::now();
-        $expiredUsers = User::where('status', 'premium')
-            ->whereHas('subscriptions', function ($query) use ($now) {
-                $query->where('ends_at', '<=', $now);
-            })
-            ->get(['id', 'name']);
+{
+    $now = Carbon::now();
+    $expiredUsers = User::where('status', 'premium')
+        ->whereHas('subscriptions', function ($query) use ($now) {
+            $query->whereRaw('UNIX_TIMESTAMP(ends_at) = UNIX_TIMESTAMP(?)', [$now]);
+        })
+        ->get(['id', 'name']);
 
-        $expiredUsers->each->update(['status' => 'basic']);
+    $expiredUsers->each->update(['status' => 'basic']);
 
-        info('Now: ' . $now->toDateTimeString());
-        info('Expired users: ' . $expiredUsers->pluck('id')->join(', '));
+    info('Now: ' . $now->toDateTimeString());
+    info('Expired users: ' . $expiredUsers->pluck('id')->join(', '));
 
-        return $expiredUsers;
-    }
+    return $expiredUsers;
+}
+
+
 }
